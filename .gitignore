@@ -1,0 +1,45 @@
+# Documentation (keep only README.md)
+*.md
+!README.md
+
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+.env.local
+
+# Data directories
+data/raw/
+data/processed/
+data/predictions/
+*.csv
+*.json
+
+# Model files
+models/*.pkl
+*.pkl
+
+# IDE and editor files
+.vscode/
+.DS_Store
+.ipynb_checkpoints/
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Compressed files
+*.rar
+*.zip
+*.tar.gz
