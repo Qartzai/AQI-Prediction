@@ -1,0 +1,74 @@
+name: Daily Prediction Generation
+
+# Runs daily at 4:00 AM UTC (after feature pipeline completes)
+on:
+  schedule:
+    - cron: '0 4 * * *'  # Every day at 4:00 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-predictions:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Generate Predictions
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: |
+          python src/generate_predictions.py
+      
+      - name: Upload predictions
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqi-predictions
+          path: |
+            data/predictions/*.csv
+          retention-days: 7
+      
+      - name: Create predictions summary
+        if: success()
+        run: |
+          echo "## Prediction Generation Report" >> $GITHUB_STEP_SUMMARY
+          echo "Generated at $(date)" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/predictions/next_3_days_predictions.csv ]; then
+            echo "✅ 3-day forecast generated" >> $GITHUB_STEP_SUMMARY
+            echo "File size: $(stat -f%z data/predictions/next_3_days_predictions.csv 2>/dev/null || stat -c%s data/predictions/next_3_days_predictions.csv) bytes" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Commit and push predictions (optional)
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/predictions/*.csv || true
+          git diff --staged --quiet || git commit -m "🤖 Auto-update: Daily AQI predictions [skip ci]"
+          git push || echo "No changes to push"
+      
+      - name: Upload logs (if failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prediction-logs
+          path: |
+            *.log
+            logs/*.log
+          retention-days: 7
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Prediction generation failed! Check logs for details."

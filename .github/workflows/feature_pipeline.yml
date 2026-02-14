@@ -1,0 +1,57 @@
+name: Daily Feature Pipeline
+
+# Runs daily at 3:00 AM UTC to fetch latest air quality data
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Every day at 3:00 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  fetch-and-process-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Set SAVE_LOCAL to false (cloud mode)
+        run: echo "SAVE_LOCAL=false" >> $GITHUB_ENV
+      
+      - name: Run Feature Pipeline
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          SAVE_LOCAL: false
+        run: |
+          python src/run_feature_pipeline.py
+      
+      - name: Upload logs (if failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-pipeline-logs
+          path: |
+            *.log
+            logs/*.log
+          retention-days: 7
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Feature pipeline failed! Check logs for details."
+      
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "Feature pipeline completed successfully!"
+          echo "Latest AQI data uploaded to Hopsworks."

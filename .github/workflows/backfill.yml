@@ -1,0 +1,70 @@
+name: Manual Backfill
+
+# Manual workflow for backfilling historical data
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Number of days to backfill (default: 360)'
+        required: false
+        default: '360'
+        type: string
+
+jobs:
+  backfill-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run Backfill
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: |
+          echo "Starting backfill for ${{ inputs.days }} days..."
+          python src/backfill_data.py
+      
+      - name: Upload historical data
+        uses: actions/upload-artifact@v4
+        with:
+          name: historical-data
+          path: |
+            data/historical/*.csv
+          retention-days: 30
+      
+      - name: Create backfill summary
+        if: success()
+        run: |
+          echo "## Backfill Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Backfilled ${{ inputs.days }} days of historical data" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/historical/historical_karachi_1y.csv ]; then
+            ROWS=$(wc -l < data/historical/historical_karachi_1y.csv)
+            echo "Total rows: $ROWS" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload logs (if failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backfill-logs
+          path: |
+            *.log
+            logs/*.log
+          retention-days: 7
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Backfill failed! Check logs for details."
