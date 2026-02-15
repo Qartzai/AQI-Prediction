@@ -29,6 +29,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
+      - name: Verify API Key Secret
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: |
+          if [ -z "$HOPSWORKS_API_KEY" ]; then
+            echo "❌ ERROR: HOPSWORKS_API_KEY secret is not set!"
+            echo "Please add it at: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "✅ HOPSWORKS_API_KEY is set (length: ${#HOPSWORKS_API_KEY})"
+      
       - name: Run Backfill
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}

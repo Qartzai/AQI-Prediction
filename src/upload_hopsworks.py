@@ -42,9 +42,19 @@ def upload_to_hopsworks(df: pd.DataFrame = None, feature_group: str = "aqi_featu
         )
 
     # 2. Authenticate & connect to project
-    project = hopsworks.login(api_key_value=api_key)
-    fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
-    print("✅ Connected to Hopsworks Feature Store")
+    try:
+        print(f"🔑 Using API key: {api_key[:10]}...{api_key[-4:] if len(api_key) > 14 else ''}")
+        project = hopsworks.login(api_key_value=api_key)
+        fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
+        print("✅ Connected to Hopsworks Feature Store")
+    except Exception as e:
+        print(f"\n❌ Failed to connect to Hopsworks!")
+        print(f"   Error: {str(e)}")
+        print(f"\n💡 Troubleshooting:")
+        print(f"   1. Generate a new API key at https://app.hopsworks.ai/")
+        print(f"   2. For GitHub: Update secret at Settings → Secrets → Actions")
+        print(f"   3. For local: Update .env file with new key")
+        raise
 
     # 3. Load DataFrame (if not passed) 
     if df is None:
