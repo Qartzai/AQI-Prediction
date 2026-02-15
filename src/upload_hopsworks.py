@@ -24,12 +24,22 @@ def upload_to_hopsworks(df: pd.DataFrame = None, feature_group: str = "aqi_featu
 
     print("🔗 Connecting to Hopsworks Feature Store...")
 
-    # 1. Load environment variables (API key) 
-    load_dotenv()
+    # 1. Load environment variables (API key)
+    # Try environment variable first (for CI/CD), then .env file (for local)
     api_key = os.getenv("HOPSWORKS_API_KEY")
-
+    
     if not api_key:
-        raise ValueError("❌ Missing HOPSWORKS_API_KEY in .env file")
+        # Try loading from .env file for local development
+        load_dotenv()
+        api_key = os.getenv("HOPSWORKS_API_KEY")
+    
+    if not api_key:
+        raise ValueError(
+            "❌ Missing HOPSWORKS_API_KEY!\n"
+            "   For local: Add HOPSWORKS_API_KEY to .env file\n"
+            "   For GitHub Actions: Add HOPSWORKS_API_KEY to repository secrets\n"
+            "   Visit: Settings → Secrets and variables → Actions → New repository secret"
+        )
 
     # 2. Authenticate & connect to project
     project = hopsworks.login(api_key_value=api_key)

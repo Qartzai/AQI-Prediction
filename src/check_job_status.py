@@ -3,12 +3,13 @@ import hopsworks
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
 def check_job_status(feature_group_name="qartzai", version=1):
     """Check the materialization job status and fetch sample data"""
     try:
         api_key = os.getenv("HOPSWORKS_API_KEY")
+        if not api_key:
+            load_dotenv()
+            api_key = os.getenv("HOPSWORKS_API_KEY")
         if not api_key:
             raise ValueError("HOPSWORKS_API_KEY not found in environment variables.")
         

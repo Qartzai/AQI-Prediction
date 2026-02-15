@@ -11,9 +11,11 @@ from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-# 1. Load API Key and Connect to Hopsworks 
-load_dotenv()
+# 1. Load API Key and Connect to Hopsworks
 api_key = os.getenv("HOPSWORKS_API_KEY")
+if not api_key:
+    load_dotenv()
+    api_key = os.getenv("HOPSWORKS_API_KEY")
 
 try:
     # First try the local historical data with 360 days
