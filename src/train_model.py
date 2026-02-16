@@ -149,15 +149,62 @@ scaler_path = os.path.join(model_dir, "scaler.pkl")
 
 print(f"📁 Model will be saved at: {model_path}")
 
-# Try saving model
+# Try saving model locally
 try:
     dump(models[best_model_name], model_path)
     if best_model_name == "Ridge Regression":
         dump(scaler, scaler_path)
         print(f"💾 Scaler also saved → {scaler_path}")
-    print(f"✅ Model saved successfully at {model_path}")
+    print(f"✅ Model saved locally at {model_path}")
 except Exception as e:
-    print("⚠️ Error saving model:", e)
+    print("⚠️ Error saving model locally:", e)
+
+# Upload model to Hopsworks Model Registry
+print("\n📤 Uploading model to Hopsworks Model Registry...")
+try:
+    if api_key:
+        project = hopsworks.login(api_key_value=api_key)
+        mr = project.get_model_registry()
+        
+        # Create model metadata
+        from hsml.schema import Schema
+        from hsml.model_schema import ModelSchema
+        
+        input_schema = Schema(X_train.columns.tolist())
+        output_schema = Schema(["aqi"])
+        model_schema = ModelSchema(input_schema=input_schema, output_schema=output_schema)
+        
+        # Register model
+        aqi_model = mr.python.create_model(
+            name="aqi_predictor",
+            metrics={
+                "rmse": rmse,
+                "mae": mae,
+                "r2": r2,
+                "model_type": best_model_name
+            },
+            model_schema=model_schema,
+            description=f"AQI prediction model using {best_model_name}",
+        )
+        
+        # Save model files
+        aqi_model.save(model_path)
+        if best_model_name == "Ridge Regression" and os.path.exists(scaler_path):
+            # Save scaler alongside model
+            import shutil
+            temp_dir = os.path.join(model_dir, "temp_model_dir")
+            os.makedirs(temp_dir, exist_ok=True)
+            shutil.copy(model_path, temp_dir)
+            shutil.copy(scaler_path, temp_dir)
+            aqi_model.save(temp_dir)
+            shutil.rmtree(temp_dir)
+        
+        print(f"✅ Model uploaded to Hopsworks Model Registry")
+    else:
+        print("⚠️ Skipping Hopsworks upload (no API key)")
+except Exception as e:
+    print(f"⚠️ Could not upload to Hopsworks Model Registry: {e}")
+    print("   Model is still saved locally")
 
 # --- Extra Info ---
 print("\n📊 Model Performance Summary ---")

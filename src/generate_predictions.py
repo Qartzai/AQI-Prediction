@@ -71,27 +71,84 @@ def generate_predictions(forecast_days=3):
     print("\n🚀 Starting Prediction Pipeline\n")
     print("=" * 50)
     
-    # 1. Load trained model
+    # 1. Load trained model (try Hopsworks first, then local)
     print("\n1️⃣ Loading trained model...")
-    model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../models"))
-    
-    # Find the best model file
-    model_files = [f for f in os.listdir(model_dir) if f.startswith("best_model_") and f.endswith(".pkl")]
-    
-    if not model_files:
-        print("❌ No trained model found! Please run train_model.py first.")
-        return None
-    
-    model_path = os.path.join(model_dir, model_files[0])
-    model = load(model_path)
-    print(f"✅ Loaded model: {model_files[0]}")
-    
-    # Load scaler if exists (for Ridge regression)
+    model = None
     scaler = None
-    scaler_path = os.path.join(model_dir, "scaler.pkl")
-    if os.path.exists(scaler_path):
-        scaler = load(scaler_path)
-        print(f"✅ Loaded scaler: scaler.pkl")
+    model_source = None
+    
+    # Try loading from Hopsworks Model Registry first
+    try:
+        from dotenv import load_dotenv
+        import hopsworks
+        
+        api_key = os.getenv("HOPSWORKS_API_KEY")
+        if not api_key:
+            load_dotenv()
+            api_key = os.getenv("HOPSWORKS_API_KEY")
+        
+        if api_key:
+            print("📥 Attempting to load model from Hopsworks Model Registry...")
+            project = hopsworks.login(api_key_value=api_key)
+            mr = project.get_model_registry()
+            
+            # Get the latest version of the model
+            retrieved_model = mr.get_model("aqi_predictor", version=None)  # None = latest
+            model_dir_temp = retrieved_model.download()
+            
+            # Load the model file
+            model_files = [f for f in os.listdir(model_dir_temp) if f.startswith("best_model_") and f.endswith(".pkl")]
+            if model_files:
+                model_path = os.path.join(model_dir_temp, model_files[0])
+                model = load(model_path)
+                model_source = "Hopsworks Model Registry"
+                print(f"✅ Loaded model from Hopsworks: {model_files[0]}")
+                
+                # Check for scaler
+                scaler_path = os.path.join(model_dir_temp, "scaler.pkl")
+                if os.path.exists(scaler_path):
+                    scaler = load(scaler_path)
+                    print(f"✅ Loaded scaler from Hopsworks")
+    except Exception as e:
+        print(f"⚠️ Could not load from Hopsworks Model Registry: {e}")
+        print("   Falling back to local model...")
+    
+    # Fallback to local model if Hopsworks failed
+    if model is None:
+        print("📂 Loading model from local directory...")
+        model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../models"))
+        
+        # Check if models directory exists
+        if not os.path.exists(model_dir):
+            print(f"❌ Models directory not found: {model_dir}")
+            print("💡 Please run train_model.py first to train models")
+            raise FileNotFoundError(f"Models directory not found: {model_dir}")
+        
+        # Find the best model file
+        model_files = [f for f in os.listdir(model_dir) if f.startswith("best_model_") and f.endswith(".pkl")]
+        
+        if not model_files:
+            print("❌ No trained model found!")
+            print("💡 Available files in models/:")
+            try:
+                print("   " + "\n   ".join(os.listdir(model_dir)))
+            except:
+                print("   (empty)")
+            print("\n💡 Please run train_model.py first to train models")
+            raise FileNotFoundError("No trained model found in models directory")
+        
+        model_path = os.path.join(model_dir, model_files[0])
+        model = load(model_path)
+        model_source = "local"
+        print(f"✅ Loaded model from local: {model_files[0]}")
+        
+        # Load scaler if exists (for Ridge regression)
+        scaler_path = os.path.join(model_dir, "scaler.pkl")
+        if os.path.exists(scaler_path):
+            scaler = load(scaler_path)
+            print(f"✅ Loaded scaler from local")
+    
+    print(f"🎯 Model source: {model_source}")
     
     # 2. Fetch forecast data
     print(f"\n2️⃣ Fetching {forecast_days}-day weather forecast...")
