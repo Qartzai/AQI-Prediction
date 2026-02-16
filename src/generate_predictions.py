@@ -96,8 +96,16 @@ def generate_predictions(forecast_days=3):
             retrieved_model = mr.get_model("aqi_prediction_model", version=None)  # None = latest
             model_dir_temp = retrieved_model.download()
             
-            # Load the model file
-            model_files = [f for f in os.listdir(model_dir_temp) if f.startswith("best_model_") and f.endswith(".pkl")]
+            print(f"📂 Downloaded to: {model_dir_temp}")
+            print(f"   Files: {os.listdir(model_dir_temp)}")
+            
+            # Load the model file - try different patterns
+            model_files = [f for f in os.listdir(model_dir_temp) if f.endswith(".pkl") and "model" in f.lower() and "scaler" not in f.lower()]
+            
+            if not model_files:
+                # If no model file found with 'model' in name, just get first .pkl that's not scaler
+                model_files = [f for f in os.listdir(model_dir_temp) if f.endswith(".pkl") and "scaler" not in f.lower()]
+            
             if model_files:
                 model_path = os.path.join(model_dir_temp, model_files[0])
                 model = load(model_path)
@@ -109,6 +117,9 @@ def generate_predictions(forecast_days=3):
                 if os.path.exists(scaler_path):
                     scaler = load(scaler_path)
                     print(f"✅ Loaded scaler from Hopsworks")
+            else:
+                print(f"⚠️ No model files found in downloaded directory")
+                print(f"   Available files: {os.listdir(model_dir_temp)}")
     except Exception as e:
         print(f"⚠️ Could not load from Hopsworks Model Registry: {e}")
         print("   Falling back to local model...")
