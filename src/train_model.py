@@ -59,10 +59,16 @@ if "datetime_str" in df.columns:
 df = df.sort_values(by="datetime").reset_index(drop=True)
 
 # 4. Drop high-leakage AQI features
-leakage_features = [col for col in df.columns if "rolling" in col or "lag" in col]
+# Features based on AQI or future information
+leakage_features = [
+    "aqi_rolling_24h",  # Rolling average of AQI (leakage)
+    "aqi_lag_1h",       # Lagged AQI values (leakage)
+    "high_pollution_flag"  # Flag based on AQI itself (leakage)
+]
 for col in leakage_features:
-    df.drop(columns=[col], inplace=True)
-    print(f"⚠️ Dropped potential leakage feature: {col}")
+    if col in df.columns:
+        df.drop(columns=[col], inplace=True)
+        print(f"⚠️ Dropped leakage feature: {col}")
 
 # 5. Add ±5% random noise to pollutant readings (simulate sensor variability)
 np.random.seed(42)
@@ -89,6 +95,7 @@ X_test = test_df.drop(columns=["aqi", "datetime"])
 y_test = test_df["aqi"]
 
 print(f"✅ Time-based split complete → Train: {X_train.shape}, Test: {X_test.shape}")
+print(f"📋 Training features ({len(X_train.columns)}): {sorted(X_train.columns.tolist())}")
 
 # 8. Preprocessing (Scaling for Ridge only) 
 scaler = StandardScaler()

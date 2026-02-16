@@ -232,12 +232,18 @@ def generate_predictions(forecast_days=3):
     exclude_cols = ["aqi", "datetime", "datetime_str"]
     
     # Also drop leakage features (same as in training)
-    leakage_features = ["aqi_rolling_24h", "aqi_lag_1h", "high_pollution_flag"]
+    leakage_features = [
+        "aqi_rolling_24h",      # Rolling average of AQI (leakage)
+        "aqi_lag_1h",           # Lagged AQI values (leakage) 
+        "high_pollution_flag"   # Flag based on AQI itself (leakage)
+    ]
     exclude_cols.extend(leakage_features)
     
     feature_cols = [col for col in forecast_featured.columns if col not in exclude_cols]
     
     X_forecast = forecast_featured[feature_cols]
+    
+    print(f"📋 Prediction features ({len(feature_cols)}): {sorted(feature_cols)}")
     
     # Handle any remaining NaNs
     X_forecast = X_forecast.ffill().bfill().fillna(0)
