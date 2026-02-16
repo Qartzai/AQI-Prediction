@@ -93,7 +93,7 @@ def generate_predictions(forecast_days=3):
             mr = project.get_model_registry()
             
             # Get the latest version of the model
-            retrieved_model = mr.get_model("aqi_predictor", version=None)  # None = latest
+            retrieved_model = mr.get_model("aqi_prediction_model", version=None)  # None = latest
             model_dir_temp = retrieved_model.download()
             
             # Load the model file

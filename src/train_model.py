@@ -176,7 +176,7 @@ try:
         
         # Register model
         aqi_model = mr.python.create_model(
-            name="aqi_predictor",
+            name="aqi_prediction_model",
             metrics={
                 "rmse": rmse,
                 "mae": mae,
