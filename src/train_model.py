@@ -173,12 +173,16 @@ try:
         project = hopsworks.login(api_key_value=api_key)
         mr = project.get_model_registry()
         
-        # Create model metadata
+        # Create model metadata with proper schema types
         from hsml.schema import Schema
         from hsml.model_schema import ModelSchema
         
-        input_schema = Schema(X_train.columns.tolist())
-        output_schema = Schema(["aqi"])
+        # Create input schema with types
+        input_features = [{"name": col, "type": "double"} for col in X_train.columns]
+        output_features = [{"name": "aqi", "type": "double"}]
+        
+        input_schema = Schema(input_features)
+        output_schema = Schema(output_features)
         model_schema = ModelSchema(input_schema=input_schema, output_schema=output_schema)
         
         # Register model
