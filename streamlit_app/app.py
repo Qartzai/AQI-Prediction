@@ -96,17 +96,30 @@ df = df.sort_values("datetime").reset_index(drop=True)
 leakage_features = ["aqi_rolling_24h", "aqi_lag_1h", "high_pollution_flag"]
 df.drop(columns=[col for col in leakage_features if col in df.columns], inplace=True, errors="ignore")
 
-# LOAD PREDICTIONS
-predictions_path = os.path.join(os.path.dirname(__file__), "../data/predictions/next_3_days_predictions.csv")
+# LOAD PREDICTIONS from Hopsworks
+has_predictions = False
+predictions_df = None
+
 try:
-    predictions_df = pd.read_csv(predictions_path)
+    # Try loading from Hopsworks first (updated by CI/CD pipeline)
+    fg_predictions = fs.get_feature_group("qartzai_predictions", version=1)
+    predictions_df = fg_predictions.read()
     predictions_df["datetime"] = pd.to_datetime(predictions_df["datetime"])
-    st.success("✅ Loaded future AQI predictions.")
+    if predictions_df["datetime"].dt.tz is not None:
+        predictions_df["datetime"] = predictions_df["datetime"].dt.tz_localize(None)
+    st.success("✅ Loaded future AQI predictions from Hopsworks.")
     has_predictions = True
 except Exception as e:
-    st.warning(f"⚠️ No predictions found. Run generate_predictions.py first.")
-    has_predictions = False
-    predictions_df = None
+    # Fallback to local file
+    predictions_path = os.path.join(os.path.dirname(__file__), "../data/predictions/next_3_days_predictions.csv")
+    try:
+        predictions_df = pd.read_csv(predictions_path)
+        predictions_df["datetime"] = pd.to_datetime(predictions_df["datetime"])
+        st.success("✅ Loaded predictions from local file.")
+        has_predictions = True
+    except Exception:
+        st.warning(f"⚠️ No predictions found. Wait for daily prediction pipeline to run.")
+        has_predictions = False
 
 # =============================================================================
 # HELPER FUNCTIONS

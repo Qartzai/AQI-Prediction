@@ -279,13 +279,14 @@ def generate_predictions(forecast_days=3):
     results.to_csv(output_file, index=False)
     print(f"💾 Saved predictions → {output_file}")
     
-    # Optional: Upload to Hopsworks
-    # try:
-    #     from upload_hopsworks import upload_to_hopsworks
-    #     upload_to_hopsworks(results, feature_group="qartzai_predictions", version=1)
-    #     print("✅ Uploaded predictions to Hopsworks")
-    # except Exception as e:
-    #     print(f"⚠️ Could not upload to Hopsworks: {e}")
+    # Upload predictions to Hopsworks for dashboard access
+    try:
+        from upload_hopsworks import upload_to_hopsworks
+        upload_to_hopsworks(results, feature_group="qartzai_predictions", version=1)
+        print("✅ Uploaded predictions to Hopsworks Feature Store")
+    except Exception as e:
+        print(f"⚠️ Could not upload to Hopsworks: {e}")
+        print("   Predictions still saved locally")
     
     print("\n" + "=" * 50)
     print("🎉 Prediction pipeline completed successfully!\n")
