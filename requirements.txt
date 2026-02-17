@@ -1,18 +1,11 @@
-# Core dependencies
 python-dotenv
 requests
 pandas
 numpy
-
-# Visualization
 matplotlib
 streamlit
 plotly
-
-# Machine learning utilities
 scikit-learn
 joblib
 xgboost
-
-# Hopsworks Feature Store SDK
-hopsworks==4.2.2
+hopsworks
