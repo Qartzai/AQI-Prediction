@@ -4,7 +4,7 @@ requests
 pandas
 numpy
 
-# Visualization (used during data exploration)
+# Visualization
 matplotlib
 streamlit
 plotly
@@ -16,5 +16,3 @@ xgboost
 
 # Hopsworks Feature Store SDK
 hopsworks==4.2.2
-hopsworks[python]==4.2.2 
-confluent-kafka
