@@ -97,27 +97,32 @@ leakage_features = ["aqi_rolling_24h", "aqi_lag_1h", "high_pollution_flag"]
 df.drop(columns=[col for col in leakage_features if col in df.columns], inplace=True, errors="ignore")
 
 # LOAD PREDICTIONS from Hopsworks
+# LOAD PREDICTIONS - prefer local file for development
 has_predictions = False
 predictions_df = None
 
+# First try local file (most up-to-date during development)
+predictions_path = os.path.join(os.path.dirname(__file__), "../data/predictions/next_3_days_predictions.csv")
 try:
-    # Try loading from Hopsworks first (updated by CI/CD pipeline)
-    fg_predictions = fs.get_feature_group("qartzai_predictions", version=1)
-    predictions_df = fg_predictions.read()
-    predictions_df["datetime"] = pd.to_datetime(predictions_df["datetime"])
-    if predictions_df["datetime"].dt.tz is not None:
-        predictions_df["datetime"] = predictions_df["datetime"].dt.tz_localize(None)
-    st.success("✅ Loaded future AQI predictions from Hopsworks.")
-    has_predictions = True
-except Exception as e:
-    # Fallback to local file
-    predictions_path = os.path.join(os.path.dirname(__file__), "../data/predictions/next_3_days_predictions.csv")
-    try:
+    if os.path.exists(predictions_path):
         predictions_df = pd.read_csv(predictions_path)
         predictions_df["datetime"] = pd.to_datetime(predictions_df["datetime"])
         st.success("✅ Loaded predictions from local file.")
         has_predictions = True
-    except Exception:
+except Exception as local_error:
+    st.warning(f"Could not load local predictions: {local_error}")
+
+# Fallback to Hopsworks if local file not available
+if not has_predictions:
+    try:
+        fg_predictions = fs.get_feature_group("qartzai_predictions", version=1)
+        predictions_df = fg_predictions.read()
+        predictions_df["datetime"] = pd.to_datetime(predictions_df["datetime"])
+        if predictions_df["datetime"].dt.tz is not None:
+            predictions_df["datetime"] = predictions_df["datetime"].dt.tz_localize(None)
+        st.success("✅ Loaded future AQI predictions from Hopsworks.")
+        has_predictions = True
+    except Exception as e:
         st.warning(f"⚠️ No predictions found. Wait for daily prediction pipeline to run.")
         has_predictions = False
 
@@ -274,13 +279,36 @@ if "aqi" in df.columns and len(df) > 0:
     
     pollutant_cols = st.columns(3)
     
+    # Convert gas pollutants from µg/m³ to ppb/ppm for display
+    temp_c = latest.get("temperature_2m", 25.0)
+    
+    # Helper function to convert µg/m³ to ppb
+    def ugm3_to_ppb(ugm3, mw, temp_c=25.0):
+        if ugm3 is None or ugm3 == 0:
+            return 0
+        T_K = temp_c + 273.15
+        ppb = ugm3 * (24.45 / mw) * (T_K / 298.15) * (1013.25 / 1013.25)
+        return ppb
+    
+    # Molecular weights
+    MW_NO2 = 46.0055
+    MW_O3 = 48.00
+    MW_SO2 = 64.066
+    MW_CO = 28.01
+    
+    # Convert gases
+    no2_ppb = ugm3_to_ppb(latest.get("nitrogen_dioxide", 0), MW_NO2, temp_c)
+    o3_ppb = ugm3_to_ppb(latest.get("ozone", 0), MW_O3, temp_c)
+    so2_ppb = ugm3_to_ppb(latest.get("sulphur_dioxide", 0), MW_SO2, temp_c)
+    co_ppm = ugm3_to_ppb(latest.get("carbon_monoxide", 0), MW_CO, temp_c) / 1000.0  # Convert ppb to ppm
+    
     pollutants_data = [
         ("PM2.5", latest.get("pm2_5", 0), "μg/m³", 0, 100, 35.4),
         ("PM10", latest.get("pm10", 0), "μg/m³", 0, 200, 154),
-        ("O₃", latest.get("ozone", 0), "ppb", 0, 150, 70),
-        ("NO₂", latest.get("nitrogen_dioxide", 0), "ppb", 0, 100, 53),
-        ("SO₂", latest.get("sulphur_dioxide", 0), "ppb", 0, 75, 35),
-        ("CO", latest.get("carbon_monoxide", 0), "ppm", 0, 15, 9),
+        ("O₃", o3_ppb, "ppb", 0, 150, 70),
+        ("NO₂", no2_ppb, "ppb", 0, 100, 53),
+        ("SO₂", so2_ppb, "ppb", 0, 75, 35),
+        ("CO", co_ppm, "ppm", 0, 15, 9),
     ]
     
     for idx, (name, value, unit, min_val, max_val, threshold) in enumerate(pollutants_data):
