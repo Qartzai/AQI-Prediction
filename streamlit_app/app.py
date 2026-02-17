@@ -350,9 +350,13 @@ if "aqi" in df.columns and len(df) > 0:
     with weather_cols[3]:
         # Calculate air quality trend from last 3 hours
         if len(df) >= 4:
-            aqi_3h_ago = df.iloc[-4]["aqi"]
-            aqi_change = latest_aqi - aqi_3h_ago
-            trend = "↗️ Worsening" if aqi_change > 5 else "↘️ Improving" if aqi_change < -5 else "→ Stable"
+            try:
+                row_3h_ago = df.iloc[-4]
+                aqi_3h_ago = recalculate_aqi_from_pollutants(row_3h_ago)
+                aqi_change = latest_aqi - aqi_3h_ago
+                trend = "↗️ Worsening" if aqi_change > 5 else "↘️ Improving" if aqi_change < -5 else "→ Stable"
+            except:
+                trend = "→ Stable"
         else:
             trend = "→ Stable"
         st.metric("📈 3h Trend", trend)
@@ -365,15 +369,28 @@ if "aqi" in df.columns and len(df) > 0:
     if len(df) >= 24:
         last_24h = df.tail(24).copy()
         
+        # Recalculate AQI for all rows to fix any incorrect stored values
+        recalculated_aqi = []
+        for idx, row in last_24h.iterrows():
+            try:
+                aqi_value = recalculate_aqi_from_pollutants(row)
+                recalculated_aqi.append(aqi_value)
+            except:
+                # If recalculation fails, use stored value but cap at 300
+                recalculated_aqi.append(min(row['aqi'], 300))
+        
+        last_24h['aqi_corrected'] = recalculated_aqi
+        
         chart_cols = st.columns([2, 1])
         
         with chart_cols[0]:
-            # Line chart with both US and simulated Europe AQI
+            # Line chart with corrected AQI values
             chart_data = pd.DataFrame({
-                'US EPA AQI': last_24h['aqi'].values,
+                'US EPA AQI': last_24h['aqi_corrected'].values,
                 'Time': last_24h['datetime'].values
             }).set_index('Time')
             st.line_chart(chart_data, height=300)
+            st.caption("💡 AQI values recalculated from raw pollutant data for accuracy")
         
         with chart_cols[1]:
             # Statistics box
@@ -383,9 +400,9 @@ if "aqi" in df.columns and len(df) > 0:
                 </div>
             """, unsafe_allow_html=True)
             
-            st.metric("Minimum", f"{last_24h['aqi'].min():.0f}")
-            st.metric("Maximum", f"{last_24h['aqi'].max():.0f}")
-            st.metric("Average", f"{last_24h['aqi'].mean():.0f}")
+            st.metric("Minimum", f"{last_24h['aqi_corrected'].min():.0f}")
+            st.metric("Maximum", f"{last_24h['aqi_corrected'].max():.0f}")
+            st.metric("Average", f"{last_24h['aqi_corrected'].mean():.0f}")
     else:
         st.info("Insufficient historical data for 24-hour trend.")
     
