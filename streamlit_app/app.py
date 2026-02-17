@@ -58,7 +58,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # TITLE SECTION 
-st.markdown("<h1 class='main-title'>🌆 Karachi AQI Prediction Dashboard</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-title'>Karachi AQI Prediction Dashboard</h1>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle'>Real-time and 3-day Air Quality predictions powered by ML & Hopsworks Feature Store.</p>", unsafe_allow_html=True)
 
 # CONNECT TO HOPSWORKS
@@ -77,7 +77,7 @@ try:
         if df["datetime"].dt.tz is not None:
             df["datetime"] = df["datetime"].dt.tz_localize(None)
     
-    st.success("✅ Connected to Hopsworks and fetched latest data.")
+    st.success("Connected to Hopsworks and fetched latest data.")
 except Exception as e:
     st.error(f"⚠ Could not fetch data from Hopsworks: {e}")
     st.info("Using local fallback data...")
@@ -107,7 +107,7 @@ try:
     if os.path.exists(predictions_path):
         predictions_df = pd.read_csv(predictions_path)
         predictions_df["datetime"] = pd.to_datetime(predictions_df["datetime"])
-        st.success("✅ Loaded predictions from local file.")
+        st.success("Loaded predictions from local file.")
         has_predictions = True
 except Exception as local_error:
     st.warning(f"Could not load local predictions: {local_error}")
@@ -120,10 +120,10 @@ if not has_predictions:
         predictions_df["datetime"] = pd.to_datetime(predictions_df["datetime"])
         if predictions_df["datetime"].dt.tz is not None:
             predictions_df["datetime"] = predictions_df["datetime"].dt.tz_localize(None)
-        st.success("✅ Loaded future AQI predictions from Hopsworks.")
+        st.success("Loaded future AQI predictions from Hopsworks.")
         has_predictions = True
     except Exception as e:
-        st.warning(f"⚠️ No predictions found. Wait for daily prediction pipeline to run.")
+        st.warning(f"No predictions found. Wait for daily prediction pipeline to run.")
         has_predictions = False
 
 # =============================================================================
@@ -133,47 +133,47 @@ if not has_predictions:
 def get_aqi_category(aqi_value):
     """Get US EPA AQI category and color"""
     if aqi_value <= 50:
-        return "🟢 Good", "#66BB6A"
+        return "Good", "#66BB6A"
     elif aqi_value <= 100:
-        return "🟡 Moderate", "#FDD835"
+        return "Moderate", "#FDD835"
     elif aqi_value <= 150:
-        return "🟠 Unhealthy for Sensitive Groups", "#FB8C00"
+        return "Unhealthy for Sensitive Groups", "#FB8C00"
     elif aqi_value <= 200:
-        return "🔴 Unhealthy", "#E53935"
+        return "Unhealthy", "#E53935"
     elif aqi_value <= 300:
-        return "🟣 Very Unhealthy", "#8E24AA"
+        return "Very Unhealthy", "#8E24AA"
     else:
-        return "🟤 Hazardous", "#6D4C41"
+        return "Hazardous", "#6D4C41"
 
 def get_eaqi_category(eaqi_value):
     """Get European AQI category and color"""
     if eaqi_value <= 25:
-        return "🟢 Good", "#66BB6A", 1
+        return "Good", "#66BB6A", 1
     elif eaqi_value <= 50:
-        return "🟡 Fair", "#9CCC65", 2
+        return "Fair", "#9CCC65", 2
     elif eaqi_value <= 75:
-        return "🟠 Moderate", "#FDD835", 3
+        return "Moderate", "#FDD835", 3
     elif eaqi_value <= 100:
-        return "🔴 Poor", "#FB8C00", 4
+        return "Poor", "#FB8C00", 4
     elif eaqi_value <= 150:
-        return "🟣 Very Poor", "#E53935", 5
+        return "Very Poor", "#E53935", 5
     else:
-        return "🟤 Extremely Poor", "#6D4C41", 6
+        return "Extremely Poor", "#6D4C41", 6
 
 def get_health_recommendation(us_aqi, eu_aqi):
     """Get health recommendations based on AQI"""
     if us_aqi <= 50:
-        return "✅ Air quality is satisfactory. Ideal for outdoor activities."
+        return "Air quality is satisfactory. Ideal for outdoor activities."
     elif us_aqi <= 100:
-        return "⚠️ Acceptable air quality. Unusually sensitive people should consider reducing prolonged outdoor exertion."
+        return "Acceptable air quality. Unusually sensitive people should consider reducing prolonged outdoor exertion."
     elif us_aqi <= 150:
-        return "🚸 Sensitive groups (children, elderly, respiratory issues) should limit outdoor activities."
+        return "Sensitive groups (children, elderly, respiratory issues) should limit outdoor activities."
     elif us_aqi <= 200:
-        return "🚨 Everyone may experience health effects. Sensitive groups should avoid outdoor activities."
+        return "Everyone may experience health effects. Sensitive groups should avoid outdoor activities."
     elif us_aqi <= 300:
-        return "⛔ Health alert! Everyone should avoid all outdoor physical activities."
+        return "Health alert! Everyone should avoid all outdoor physical activities."
     else:
-        return "☠️ Emergency conditions! Stay indoors with air purifiers. Avoid all outdoor exposure."
+        return "Emergency conditions! Stay indoors with air purifiers. Avoid all outdoor exposure."
 
 def recalculate_aqi_from_pollutants(row):
     """Recalculate US EPA AQI from raw pollutant values"""
@@ -219,9 +219,6 @@ def calculate_european_aqi_simple(row):
         
         return {"european_aqi": eaqi, "eaqi_category": "Calculated"}
 
-# =============================================================================
-# CURRENT CONDITIONS DASHBOARD
-# =============================================================================
 
 if "aqi" in df.columns and len(df) > 0:
     latest = df.iloc[-1]
@@ -235,7 +232,7 @@ if "aqi" in df.columns and len(df) > 0:
     european_aqi = eaqi_result.get("european_aqi", 0)
     
     st.markdown("---")
-    st.subheader("🌍 Current Air Quality Status")
+    st.subheader("Current Air Quality Status")
     st.caption(f"Last updated: {latest_datetime.strftime('%Y-%m-%d %H:%M')}")
     
     # ========= TWO-COLUMN AQI COMPARISON =========
@@ -268,14 +265,14 @@ if "aqi" in df.columns and len(df) > 0:
         """, unsafe_allow_html=True)
     
     # ========= HEALTH RECOMMENDATIONS =========
-    st.markdown("### 🏥 Health Recommendations")
+    st.markdown("### Health Recommendations")
     health_rec = get_health_recommendation(latest_aqi, european_aqi)
     st.info(health_rec)
     
     st.markdown("---")
     
     # ========= POLLUTANT BREAKDOWN =========
-    st.subheader("🧪 Individual Pollutant Levels")
+    st.subheader("Individual Pollutant Levels")
     
     pollutant_cols = st.columns(3)
     
@@ -335,18 +332,18 @@ if "aqi" in df.columns and len(df) > 0:
     st.markdown("---")
     
     # ========= WEATHER CONDITIONS =========
-    st.subheader("🌤️ Current Weather Conditions")
+    st.subheader("Current Weather Conditions")
     
     weather_cols = st.columns(4)
     with weather_cols[0]:
         temp = latest.get("temperature_2m", 0)
-        st.metric("🌡️ Temperature", f"{temp:.1f}°C", help="2m above ground")
+        st.metric("Temperature", f"{temp:.1f}°C", help="2m above ground")
     with weather_cols[1]:
         humidity = latest.get("relative_humidity_2m", 0)
-        st.metric("💧 Humidity", f"{humidity:.0f}%", help="Relative humidity")
+        st.metric("Humidity", f"{humidity:.0f}%", help="Relative humidity")
     with weather_cols[2]:
         wind = latest.get("wind_speed_10m", 0)
-        st.metric("💨 Wind Speed", f"{wind:.1f} km/h", help="10m above ground")
+        st.metric("Wind Speed", f"{wind:.1f} km/h", help="10m above ground")
     with weather_cols[3]:
         # Calculate air quality trend from last 3 hours
         if len(df) >= 4:
@@ -354,17 +351,17 @@ if "aqi" in df.columns and len(df) > 0:
                 row_3h_ago = df.iloc[-4]
                 aqi_3h_ago = recalculate_aqi_from_pollutants(row_3h_ago)
                 aqi_change = latest_aqi - aqi_3h_ago
-                trend = "↗️ Worsening" if aqi_change > 5 else "↘️ Improving" if aqi_change < -5 else "→ Stable"
+                trend = "↗Worsening" if aqi_change > 5 else "↘Improving" if aqi_change < -5 else "→ Stable"
             except:
                 trend = "→ Stable"
         else:
             trend = "→ Stable"
-        st.metric("📈 3h Trend", trend)
+        st.metric("3h Trend", trend)
     
     st.markdown("---")
     
     # ========= 24-HOUR HISTORICAL TREND =========
-    st.subheader("📊 24-Hour AQI History")
+    st.subheader("24-Hour AQI History")
     
     if len(df) >= 24:
         last_24h = df.tail(24).copy()
@@ -390,7 +387,7 @@ if "aqi" in df.columns and len(df) > 0:
                 'Time': last_24h['datetime'].values
             }).set_index('Time')
             st.line_chart(chart_data, height=300)
-            st.caption("💡 AQI values recalculated from raw pollutant data for accuracy")
+            st.caption("AQI values recalculated from raw pollutant data for accuracy")
         
         with chart_cols[1]:
             # Statistics box
@@ -407,13 +404,13 @@ if "aqi" in df.columns and len(df) > 0:
         st.info("Insufficient historical data for 24-hour trend.")
     
 else:
-    st.warning("⚠️ No current AQI data available")
+    st.warning("No current AQI data available")
 
 # =============================================================================
 # FUTURE PREDICTIONS
 # =============================================================================
 st.markdown("---")
-st.subheader("📅 3-Day AQI Forecast")
+st.subheader("3-Day AQI Forecast")
 
 if has_predictions and predictions_df is not None:
     # Use real predictions from generate_predictions.py
@@ -427,7 +424,7 @@ if has_predictions and predictions_df is not None:
     daily_stats.columns = ["date", "avg_aqi", "min_aqi", "max_aqi"]
     
     # ========= PREDICTION SUMMARY CARDS =========
-    st.markdown("### 📊 Daily Forecast Summary")
+    st.markdown("### Daily Forecast Summary")
     pred_cols = st.columns(3)
     
     for idx, (_, row) in enumerate(daily_stats.iterrows()):
@@ -452,9 +449,9 @@ if has_predictions and predictions_df is not None:
     st.markdown("---")
     
     # ========= DETAILED CHARTS =========
-    st.markdown("### 📈 Detailed Forecast Charts")
+    st.markdown("### Detailed Forecast Charts")
     
-    chart_tabs = st.tabs(["📉 Hourly Trend", "📊 Daily Comparison", "📋 Data Table"])
+    chart_tabs = st.tabs(["Hourly Trend", "Daily Comparison", "Data Table"])
     
     with chart_tabs[0]:
         # Enhanced line chart with annotations
@@ -494,11 +491,11 @@ if has_predictions and predictions_df is not None:
         
         # Trend analysis
         if daily_stats["avg_aqi"].iloc[-1] < daily_stats["avg_aqi"].iloc[0]:
-            st.success("📉 Overall improving trend over the next 3 days")
+            st.success("Overall improving trend over the next 3 days")
         elif daily_stats["avg_aqi"].iloc[-1] > daily_stats["avg_aqi"].iloc[0]:
-            st.warning("📈 Overall worsening trend over the next 3 days")
+            st.warning("Overall worsening trend over the next 3 days")
         else:
-            st.info("➡️ Stable air quality expected over the next 3 days")
+            st.info("Stable air quality expected over the next 3 days")
     
     with chart_tabs[2]:
         # Data table with formatting
@@ -526,7 +523,7 @@ if has_predictions and predictions_df is not None:
     st.markdown("---")
     
     # ========= FORECAST INTERPRETATION =========
-    st.markdown("### 💡 Forecast Insights")
+    st.markdown("### Forecast Insights")
     
     avg_aqi_today = df.tail(24)["aqi"].mean() if "aqi" in df.columns and len(df) >= 24 else None
     avg_pred_aqi_next = future_results.head(24)["predicted_aqi"].mean()
@@ -537,11 +534,11 @@ if has_predictions and predictions_df is not None:
         if avg_aqi_today and avg_pred_aqi_next:
             change = avg_pred_aqi_next - avg_aqi_today
             if change > 5:
-                st.warning(f"⚠️ **+{change:.0f} AQI point increase** expected in next 24h")
+                st.warning(f"**+{change:.0f} AQI point increase** expected in next 24h")
             elif change < -5:
-                st.success(f"✅ **{abs(change):.0f} AQI point decrease** expected in next 24h")
+                st.success(f"**{abs(change):.0f} AQI point decrease** expected in next 24h")
             else:
-                st.info(f"➡️ **Stable** air quality expected (±{abs(change):.0f} points)")
+                st.info(f"**Stable** air quality expected (±{abs(change):.0f} points)")
     
     with insight_cols[1]:
         # Count hours in each category
@@ -552,9 +549,9 @@ if has_predictions and predictions_df is not None:
         
         st.info(f"""
         **Forecast Breakdown:**
-        - 🟢 Good: {good_hours} hours
-        - 🟡 Moderate: {moderate_hours} hours
-        - 🔴 Unhealthy: {unhealthy_hours} hours
+        - Good: {good_hours} hours
+        - Moderate: {moderate_hours} hours
+        - Unhealthy: {unhealthy_hours} hours
         """)
     
     with insight_cols[2]:
@@ -568,11 +565,11 @@ if has_predictions and predictions_df is not None:
             (AQI: {good_times.iloc[0]['predicted_aqi']:.0f})
             """)
         else:
-            st.warning("⚠️ No 'Good' air quality periods predicted")
+            st.warning("No 'Good' air quality periods predicted")
     
 else:
-    st.warning("⚠️ No predictions available. Please run `python src/generate_predictions.py` to generate forecasts.")
-    st.info("💡 Run the prediction script to see 3-day AQI forecasts with detailed insights.")
+    st.warning("No predictions available. Please run `python src/generate_predictions.py` to generate forecasts.")
+    st.info("Run the prediction script to see 3-day AQI forecasts with detailed insights.")
 
 
 
@@ -584,12 +581,12 @@ st.markdown("""
 <div style='text-align: center; color: #666; padding: 20px;'>
     <p style='font-size: 0.9em;'>
         <b>Karachi AQI Prediction Dashboard</b><br>
-        Powered by Machine Learning (Random Forest) • Hopsworks Feature Store • Open-Meteo API<br>
-        <i>Predictions updated daily • Historical data: 360 days • Model accuracy: R² = 0.963</i>
+        Powered by Machine Learning • Hopsworks Feature Store • Open-Meteo API<br>
+        
     </p>
     <p style='font-size: 0.8em; margin-top: 10px;'>
-        📍 Location: Karachi, Pakistan (24.86°N, 67.00°E)<br>
-        ⚠️ Disclaimer: For informational purposes only. Always refer to official sources for health advisories.
+        Location: Karachi, Pakistan (24.86°N, 67.00°E)<br>
+        Disclaimer: For informational purposes only. Always refer to official sources for health advisories.
     </p>
 </div>
 """, unsafe_allow_html=True)
