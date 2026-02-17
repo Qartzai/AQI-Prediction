@@ -188,6 +188,7 @@ try:
         # Register model (metrics must be numeric only)
         aqi_model = mr.python.create_model(
             name="aqi_prediction_model",
+            version=3,  # Explicitly set version
             metrics={
                 "rmse": float(rmse),
                 "mae": float(mae),
