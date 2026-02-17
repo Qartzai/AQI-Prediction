@@ -185,17 +185,16 @@ try:
         output_schema = Schema(output_features)
         model_schema = ModelSchema(input_schema=input_schema, output_schema=output_schema)
         
-        # Register model
+        # Register model (metrics must be numeric only)
         aqi_model = mr.python.create_model(
             name="aqi_prediction_model",
             metrics={
-                "rmse": rmse,
-                "mae": mae,
-                "r2": r2,
-                "model_type": best_model_name
+                "rmse": float(rmse),
+                "mae": float(mae),
+                "r2": float(r2)
             },
             model_schema=model_schema,
-            description=f"AQI prediction model using {best_model_name}",
+            description=f"AQI prediction model using {best_model_name}. Trained on {len(X_train)} samples.",
         )
         
         # Save model files
