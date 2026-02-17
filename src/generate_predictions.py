@@ -92,11 +92,11 @@ def generate_predictions(forecast_days=3):
             project = hopsworks.login(api_key_value=api_key)
             mr = project.get_model_registry()
             
-            # Get the latest version of the model
-            retrieved_model = mr.get_model("aqi_prediction_model", version=None)  # None = latest
+            # Get version 3 of the model (latest trained version)
+            retrieved_model = mr.get_model("aqi_prediction_model", version=3)
             model_dir_temp = retrieved_model.download()
             
-            print(f"📂 Downloaded to: {model_dir_temp}")
+            print(f"📂 Downloaded model version 3 to: {model_dir_temp}")
             print(f"   Files: {os.listdir(model_dir_temp)}")
             
             # Load the model file - try different patterns
