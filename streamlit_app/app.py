@@ -439,7 +439,7 @@ if has_predictions and predictions_df is not None:
                     <p style='margin: 0; font-size: 0.9em; font-weight: bold;'>{day_name}</p>
                     <p style='margin: 0; font-size: 0.8em; color: #666;'>{row["date"]}</p>
                     <h2 style='margin: 10px 0; color: {color};'>{avg_aqi:.0f}</h2>
-                    <p style='margin: 0; font-size: 0.85em;'>{category.split()[1]}</p>
+                    <p style='margin: 0; font-size: 0.85em;'>{category}</p>
                     <p style='margin: 5px 0 0 0; font-size: 0.75em; color: #999;'>
                         Range: {row["min_aqi"]:.0f} - {row["max_aqi"]:.0f}
                     </p>
@@ -506,7 +506,7 @@ if has_predictions and predictions_df is not None:
         display_df["datetime"] = pd.to_datetime(display_df["datetime"]).dt.strftime("%Y-%m-%d %H:%M")
         display_df["predicted_aqi"] = display_df["predicted_aqi"].round(1)
         display_df["category"] = display_df["predicted_aqi"].apply(
-            lambda x: get_aqi_category(x)[0].split()[1]
+            lambda x: get_aqi_category(x)[0]
         )
         
         st.dataframe(
