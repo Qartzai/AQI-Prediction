@@ -170,15 +170,30 @@ def get_health_recommendation(us_aqi, eu_aqi):
     else:
         return "☠️ Emergency conditions! Stay indoors with air purifiers. Avoid all outdoor exposure."
 
+def recalculate_aqi_from_pollutants(row):
+    """Recalculate US EPA AQI from raw pollutant values"""
+    try:
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
+        from aqi_utils import compute_aqi_from_row
+        result = compute_aqi_from_row(row, temp_c=row.get('temperature_2m', 25.0))
+        return result.get('aqi', row.get('aqi', 0))
+    except Exception as e:
+        st.warning(f"Using stored AQI value (recalculation failed: {e})")
+        return row.get('aqi', 0)
+
 def calculate_european_aqi_simple(row):
     """Calculate European AQI from pollutants"""
     try:
         # Import the function from aqi_utils
         import sys
-        sys.path.append('../src')
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
         from aqi_utils import calculate_european_aqi
         return calculate_european_aqi(row)
-    except:
+    except Exception as e:
+        st.warning(f"European AQI calculation failed: {e}")
         # Simplified fallback calculation
         pm25 = row.get("pm2_5", 0) or 0
         pm10 = row.get("pm10", 0) or 0
@@ -205,7 +220,9 @@ def calculate_european_aqi_simple(row):
 
 if "aqi" in df.columns and len(df) > 0:
     latest = df.iloc[-1]
-    latest_aqi = latest["aqi"]
+    
+    # Recalculate AQI from raw pollutant values to ensure accuracy
+    latest_aqi = recalculate_aqi_from_pollutants(latest)
     latest_datetime = latest["datetime"]
     
     # Calculate European AQI
@@ -512,104 +529,7 @@ else:
     st.warning("⚠️ No predictions available. Please run `python src/generate_predictions.py` to generate forecasts.")
     st.info("💡 Run the prediction script to see 3-day AQI forecasts with detailed insights.")
 
-# =============================================================================
-# INFORMATION & COMPARISON SECTION
-# =============================================================================
-st.markdown("---")
 
-with st.expander("ℹ️ Understanding AQI Standards: US EPA vs European EAQI"):
-    col_info1, col_info2 = st.columns(2)
-    
-    with col_info1:
-        st.markdown("""
-        ### 🇺🇸 US EPA AQI
-        **Scale:** 0-500 (higher = worse)
-        
-        **Categories:**
-        - **0-50:** 🟢 Good
-        - **51-100:** 🟡 Moderate
-        - **101-150:** 🟠 Unhealthy for Sensitive Groups
-        - **151-200:** 🔴 Unhealthy
-        - **201-300:** 🟣 Very Unhealthy
-        - **301-500:** 🟤 Hazardous
-        
-        **Pollutants Measured:**
-        - PM2.5, PM10
-        - Ozone (O₃)
-        - NO₂, SO₂, CO
-        
-        **Note:** Most widely used globally, especially in North America and Asia.
-        """)
-    
-    with col_info2:
-        st.markdown("""
-        ### 🇪🇺 European EAQI (CAQI)
-        **Scale:** 0-300 (higher = worse)
-        
-        **Categories (Levels):**
-        - **0-25:** 🟢 Good (Level 1)
-        - **26-50:** 🟡 Fair (Level 2)
-        - **51-75:** 🟠 Moderate (Level 3)
-        - **76-100:** 🔴 Poor (Level 4)
-        - **101-150:** 🟣 Very Poor (Level 5)
-        - **>150:** 🟤 Extremely Poor (Level 6)
-        
-        **Pollutants Measured:**
-        - PM2.5, PM10
-        - Ozone (O₃)
-        - NO₂, SO₂
-        
-        **Note:** Used by European Environment Agency (EEA) across EU member states.
-        """)
-    
-    st.markdown("---")
-    st.markdown("""
-    ### 🔬 Key Differences
-    
-    | Aspect | US EPA | European EAQI |
-    |--------|---------|---------------|
-    | **Scale Range** | 0-500 | 0-300 |
-    | **Breakpoints** | More granular | Simpler categories |
-    | **CO Monitoring** | Included | Not included |
-    | **Sensitivity** | Higher for PM2.5 | More focus on PM10 |
-    | **Usage** | North America, Asia | European Union |
-    
-    **Why might they differ?**
-    - Different breakpoint concentrations for the same pollutant
-    - Different emphasis (US focuses more on PM2.5, EU on PM10)
-    - Different calculation methodologies
-    - Regional air quality standards and health guidelines vary
-    
-    **For Karachi:** We show both standards so you can compare with international cities using either system.
-    """)
-
-with st.expander("❓ Frequently Asked Questions"):
-    st.markdown("""
-    ### What causes high AQI in Karachi?
-    - **Traffic emissions:** Vehicle exhaust (NO₂, CO, PM)
-    - **Industrial pollution:** Factories and power plants (SO₂, PM)
-    - **Construction dust:** PM10 from building activities
-    - **Weather conditions:** Low wind speed traps pollutants
-    - **Crop burning:** Seasonal agricultural practices (PM2.5)
-    
-    ### When is air quality best in Karachi?
-    - **Early morning hours** (5-8 AM) before traffic peaks
-    - **Monsoon season** (July-September) - rain cleans the air
-    - **Windy days** - disperse pollutants effectively
-    
-    ### How can I protect myself?
-    - **Check daily forecasts** before planning outdoor activities
-    - **Wear N95/N99 masks** on high AQI days
-    - **Use air purifiers** indoors (HEPA filters recommended)
-    - **Avoid outdoor exercise** when AQI > 150
-    - **Keep windows closed** during peak pollution hours
-    
-    ### How accurate are these predictions?
-    - **Model Performance:** R² = 0.963 (excellent accuracy)
-    - **Typical Error:** ±11.5 AQI points
-    - **Data Source:** Open-Meteo API (weather + air quality forecasts)
-    - **Update Frequency:** Models retrained weekly with latest data
-    """)
 
 # =============================================================================
 # FOOTER
