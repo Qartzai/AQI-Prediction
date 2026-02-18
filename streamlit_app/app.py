@@ -7,7 +7,9 @@ from datetime import timedelta
 import matplotlib.pyplot as plt
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    # Load .env from project root (parent directory of streamlit_app)
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+    load_dotenv(env_path)
 except ImportError:
     pass
 
@@ -66,12 +68,12 @@ st.markdown("<h1 class='main-title'>Karachi AQI Prediction Dashboard</h1>", unsa
 st.markdown("<p class='subtitle'>Real-time and 3-day Air Quality predictions powered by ML & Hopsworks Feature Store.</p>", unsafe_allow_html=True)
 
 # CONNECT TO HOPSWORKS
-# Try Streamlit Cloud secrets first, fallback to environment variable
-try:
-    api_key = st.secrets["HOPSWORKS_API_KEY"]
-except (KeyError, FileNotFoundError):
-    api_key = os.getenv("HOPSWORKS_API_KEY")
-    if not api_key:
+# Try environment variable first (local .env), then Streamlit Cloud secrets
+api_key = os.getenv("HOPSWORKS_API_KEY")
+if not api_key:
+    try:
+        api_key = st.secrets["HOPSWORKS_API_KEY"]
+    except (KeyError, FileNotFoundError):
         st.error("❌ HOPSWORKS_API_KEY not found. Please set it in .env file or Streamlit secrets.")
         st.stop()
 
