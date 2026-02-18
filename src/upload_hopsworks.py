@@ -69,12 +69,14 @@ def upload_to_hopsworks(df: pd.DataFrame = None, feature_group: str = "aqi_featu
 
     print(f"📊 Dataset shape before upload: {df.shape}")
 
-    # 4. Datetime handling 
+    # 4. Datetime handling - keep as datetime type
     if "datetime" in df.columns:
         df["datetime"] = pd.to_datetime(df["datetime"])
-        df["datetime_str"] = df["datetime"].astype(str)
-        df.drop(columns=["datetime"], inplace=True)
-    elif "datetime_str" not in df.columns:
+    elif "datetime_str" in df.columns:
+        # Legacy: convert datetime_str back to datetime
+        df["datetime"] = pd.to_datetime(df["datetime_str"])
+        df.drop(columns=["datetime_str"], inplace=True)
+    else:
         raise ValueError("❌ Missing datetime column in DataFrame")
 
     # 5. Drop extra columns not in FG schema
@@ -94,7 +96,8 @@ def upload_to_hopsworks(df: pd.DataFrame = None, feature_group: str = "aqi_featu
     fg = fs.get_or_create_feature_group(
         name=feature_group,
         version=version,
-        primary_key=["datetime_str"],
+        primary_key=["datetime"],
+        event_time="datetime",
         description="Karachi AQI selected features (daily ingestion)",
         online_enabled=True
     )

@@ -71,13 +71,19 @@ try:
     fg = fs.get_feature_group("qartzai_2", version=1)
     df = fg.read()
     
-    # Make datetime timezone-naive to avoid comparison errors
+    # Handle datetime column
     if "datetime" in df.columns:
         df["datetime"] = pd.to_datetime(df["datetime"])
-        if df["datetime"].dt.tz is not None:
-            df["datetime"] = df["datetime"].dt.tz_localize(None)
+    elif "datetime_str" in df.columns:
+        # Legacy: convert datetime_str back to datetime
+        df["datetime"] = pd.to_datetime(df["datetime_str"])
+        df.drop(columns=["datetime_str"], inplace=True, errors="ignore")
     
-    st.success("Connected to Hopsworks and fetched latest data.")
+    # Make datetime timezone-naive to avoid comparison errors
+    if "datetime" in df.columns and df["datetime"].dt.tz is not None:
+        df["datetime"] = df["datetime"].dt.tz_localize(None)
+    
+    st.success("✅ Connected to Hopsworks and fetched latest data.")
 except Exception as e:
     st.error(f"⚠ Could not fetch data from Hopsworks: {e}")
     st.info("Using local fallback data...")
@@ -86,10 +92,6 @@ except Exception as e:
         df["datetime"] = pd.to_datetime(df["datetime"])
 
 # DATA PREPARATION
-if "datetime_str" in df.columns:
-    df["datetime"] = pd.to_datetime(df["datetime_str"])
-    df.drop(columns=["datetime_str"], inplace=True)
-
 df = df.sort_values("datetime").reset_index(drop=True)
 
 # Drop leakage features

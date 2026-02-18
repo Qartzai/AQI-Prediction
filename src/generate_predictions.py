@@ -191,8 +191,15 @@ def generate_predictions(forecast_days=3):
         fg = fs.get_feature_group("qartzai_2", version=1)
         historical_df = fg.read()
         
-        # Convert and clean datetime
-        historical_df["datetime"] = pd.to_datetime(historical_df["datetime"])
+        # Handle datetime column
+        if "datetime" in historical_df.columns:
+            historical_df["datetime"] = pd.to_datetime(historical_df["datetime"])
+        elif "datetime_str" in historical_df.columns:
+            # Legacy: convert datetime_str back to datetime
+            historical_df["datetime"] = pd.to_datetime(historical_df["datetime_str"])
+        else:
+            raise ValueError(f"No datetime column found. Available columns: {historical_df.columns.tolist()}")
+        
         if historical_df["datetime"].dt.tz is not None:
             historical_df["datetime"] = historical_df["datetime"].dt.tz_localize(None)
         
@@ -229,7 +236,7 @@ def generate_predictions(forecast_days=3):
     print("\n6️⃣ Preparing features for prediction...")
     
     # Get feature names (exclude target and datetime)
-    exclude_cols = ["aqi", "datetime", "datetime_str"]
+    exclude_cols = ["aqi", "datetime"]
     
     # Also drop leakage features (same as in training)
     leakage_features = [

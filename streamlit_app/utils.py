@@ -9,10 +9,17 @@ load_dotenv()
 def load_feature_data():
     api_key = os.getenv("HOPSWORKS_API_KEY")
     project = hopsworks.login(api_key_value=api_key)
-    fs = project.get_feature_store()
-    fg = fs.get_feature_group("aqi_features", version=1)
+    fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
+    fg = fs.get_feature_group("qartzai_2", version=1)
     df = fg.read()
-    df["datetime"] = pd.to_datetime(df["datetime_str"])
+    
+    # Handle datetime column
+    if "datetime" in df.columns:
+        df["datetime"] = pd.to_datetime(df["datetime"])
+    elif "datetime_str" in df.columns:
+        df["datetime"] = pd.to_datetime(df["datetime_str"])
+        df.drop(columns=["datetime_str"], inplace=True)
+    
     return df.sort_values("datetime")
 
 def load_model():

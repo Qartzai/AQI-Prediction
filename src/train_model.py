@@ -51,7 +51,11 @@ except Exception as e:
 print("Initial shape:", df.shape)
 
 # 2. Prepare datetime and ensure correct type
-if "datetime_str" in df.columns:
+# Handle datetime column
+if "datetime" in df.columns:
+    df["datetime"] = pd.to_datetime(df["datetime"])
+elif "datetime_str" in df.columns:
+    # Legacy: convert datetime_str back to datetime
     df["datetime"] = pd.to_datetime(df["datetime_str"])
     df.drop(columns=["datetime_str"], inplace=True)
 

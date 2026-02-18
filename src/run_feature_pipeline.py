@@ -78,17 +78,23 @@ try:
         import hopsworks
 
         project = hopsworks.login()
-        fs = project.get_feature_store()
-        fg = fs.get_feature_group("aqi_features", version=2)
+        fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
+        fg = fs.get_feature_group("qartzai_2", version=1)
 
         df_check = fg.read()  # Read full feature group
-        df_check["datetime_str"] = pd.to_datetime(df_check["datetime_str"])
+        
+        # Handle datetime column
+        if "datetime" in df_check.columns:
+            df_check["datetime"] = pd.to_datetime(df_check["datetime"])
+        elif "datetime_str" in df_check.columns:
+            df_check["datetime"] = pd.to_datetime(df_check["datetime_str"])
+            df_check.drop(columns=["datetime_str"], inplace=True)
 
         # Sort chronologically to check range
-        df_check.sort_values("datetime_str", inplace=True)
+        df_check.sort_values("datetime", inplace=True)
         print("\n🧭 Feature Store Data Time Range:")
-        print(f"Start → {df_check['datetime_str'].min()}")
-        print(f"End   → {df_check['datetime_str'].max()}")
+        print(f"Start → {df_check['datetime'].min()}")
+        print(f"End   → {df_check['datetime'].max()}")
 
         # Display small samples
         print("\n📊 Head of Feature Store:")
