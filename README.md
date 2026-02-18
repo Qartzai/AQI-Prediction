@@ -1,13 +1,9 @@
 # 🌆 Karachi AQI Prediction Bot
 
-![Feature Pipeline](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/feature_pipeline.yml/badge.svg)
-![Training Pipeline](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/training_pipeline.yml/badge.svg)
-![Prediction Pipeline](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/prediction_pipeline.yml/badge.svg)
-![PR Tests](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/pr_tests.yml/badge.svg)
 
 > Real-time Air Quality Index predictions for Karachi using Machine Learning and automated CI/CD pipelines.
 
-## 🎯 Overview
+## Overview
 
 This project predicts Air Quality Index (AQI) for Karachi, Pakistan using machine learning models trained on 360 days of historical data. It provides:
 
@@ -16,30 +12,30 @@ This project predicts Air Quality Index (AQI) for Karachi, Pakistan using machin
 - **Health Recommendations** - Personalized advice based on air quality
 - **Automated Updates** - Daily data collection and predictions via GitHub Actions
 
-## ✨ Features
+## Features
 
-### 🌍 Dual AQI Standards
+### Dual AQI Standards
 - **US EPA AQI** (0-500 scale) - North American standard
 - **European EAQI** (0-300 scale) - European Environment Agency standard
 
-### 🧪 Comprehensive Monitoring
+### Comprehensive Monitoring
 - **6 Pollutants:** PM2.5, PM10, O₃, NO₂, SO₂, CO
 - **4 Weather Metrics:** Temperature, Humidity, Wind Speed, Trend
 - **24-Hour History:** Recent trends with statistics
 
-### 📊 Advanced Forecasting
+### Advanced Forecasting
 - **72-Hour Predictions** - Hourly granularity
 - **Peak Time Detection** - When air quality is worst/best
 - **Health Insights** - Best times for outdoor activities
 - **Category Breakdown** - Hours in each air quality category
 
-### 🤖 Automated CI/CD
+### Automated CI/CD
 - **Daily Data Collection** (3:00 AM UTC)
 - **Weekly Model Training** (Sundays 3:30 AM UTC)
 - **Daily Predictions** (4:00 AM UTC)
 - **Pull Request Tests** (On every PR)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 ```bash
@@ -96,7 +92,7 @@ streamlit run streamlit_app/app.py
 http://localhost:8501
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 NLP-Project/
@@ -131,7 +127,7 @@ NLP-Project/
     └── 02_eda_feature_analysis.ipynb
 ```
 
-## 🔄 CI/CD Pipeline
+## CI/CD Pipeline
 
 ### Automated Workflows
 
@@ -148,9 +144,6 @@ NLP-Project/
 | **Backfill** | Manual | Refresh 360 days historical data |
 | **PR Tests** | Pull Request | Code quality validation |
 
-### Setup CI/CD
-
-See [CICD_SETUP.md](CICD_SETUP.md) for detailed instructions.
 
 **Quick Setup:**
 1. Push code to GitHub
@@ -158,7 +151,7 @@ See [CICD_SETUP.md](CICD_SETUP.md) for detailed instructions.
 3. Enable workflows in Actions tab
 4. Done! Pipelines run automatically
 
-## 📊 Model Performance
+## Model Performance
 
 ### Best Model: Random Forest
 - **R² Score:** 0.963 (Excellent)
@@ -172,21 +165,14 @@ See [CICD_SETUP.md](CICD_SETUP.md) for detailed instructions.
 - **Time-based:** Hour, Day, Month, Weekday, Cyclic encoding
 - **Derived:** PM ratio, Temp/Humidity ratio, Wind effect
 
-## 🌐 Data Sources
+## Data Sources
 
 - **Air Quality:** Open-Meteo Air Quality API
 - **Weather:** Open-Meteo Forecast API
 - **Location:** Karachi, Pakistan (24.86°N, 67.00°E)
 - **Update Frequency:** Hourly observations, Daily forecasts
 
-## 📖 Documentation
-
-- [PIPELINE_GUIDE.md](PIPELINE_GUIDE.md) - Complete usage guide
-- [CICD_SETUP.md](CICD_SETUP.md) - GitHub Actions setup
-- [FIXES_SUMMARY.md](FIXES_SUMMARY.md) - Bug fixes and improvements
-- [DASHBOARD_ENHANCEMENTS.md](DASHBOARD_ENHANCEMENTS.md) - Dashboard features
-
-## 🛠️ Development
+## Development
 
 ### Run Tests
 ```bash
@@ -208,7 +194,7 @@ black src/ streamlit_app/
 pip freeze > requirements.txt
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-feature`)
@@ -216,7 +202,7 @@ pip freeze > requirements.txt
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request (PR tests run automatically)
 
-## 📈 Roadmap
+## Roadmap
 
 - [ ] Add more cities (Lahore, Islamabad, Peshawar)
 - [ ] SMS/Email alerts for unhealthy AQI
@@ -227,38 +213,109 @@ pip freeze > requirements.txt
 - [ ] API endpoint for external access
 - [ ] Real-time streaming dashboard
 
-## 🐛 Known Issues
+## Known Issues
 
 - Hopsworks connection may timeout (uses local file fallback)
 - European AQI calculated from simplified conversion
 - Lag features less accurate when historical data unavailable
 
-## 📝 License
+## Troubleshooting & Lessons Learned
+
+During development, we ran into several issues that might help others working on similar projects. Here's what went wrong and how we fixed it:
+
+### 1. Dashboard Showing Wrong Data
+**Problem:** The dashboard was displaying AQI values of 500 (which is basically toxic air) and predictions were stuck at 95 for all three days. Pollutants like CO were showing 283.8 ppm instead of the actual 1.0 ppm.
+
+**Fix:** Turned out the stored AQI values couldn't be trusted because of incorrect unit conversions. We added a function to recalculate AQI from raw pollutant data every time, using proper molecular weight conversions (µg/m³ to ppb/ppm). Now the dashboard shows accurate real-time values.
+
+### 2. Weird 500 AQI Spike in Charts
+**Problem:** The 24-hour chart would randomly spike to 500 at the last data point, making it look like sudden apocalyptic air quality.
+
+**Fix:** Same root cause as above - one stored AQI value was calculated with wrong units. Instead of fixing that one value, we made the chart recalculate all AQI values from raw data. Problem disappeared.
+
+### 3. Category Display Crashing
+**Problem:** The app would crash with `IndexError` when trying to display AQI categories because we were calling `.split()[1]` on category names.
+
+**Fix:** Removed the `.split()[1]` entirely since the `get_aqi_category()` function already returns clean category names like "Good" or "Moderate". No splitting needed.
+
+### 4. GitHub Actions Prediction Workflow Failing
+**Problem:** The daily prediction workflow kept failing with `KeyError: "['datetime'] not in index"`. Super frustrating because it would work locally but fail on GitHub.
+
+**Fix:** The issue was inconsistent column naming - sometimes Hopsworks stored it as "datetime" and sometimes as "datetime_str". We updated the code to handle both cases defensively.
+
+### 5. The Big Datetime Mess
+**Problem:** Everything broke after we discovered that datetime values were being converted to strings throughout the entire codebase. This was causing schema mismatches and the KeyError above.
+
+**Fix:** This required a bigger fix across 6 files:
+- Changed `upload_hopsworks.py` to keep datetime as an actual datetime type instead of converting to string
+- Updated primary_key from `["datetime_str"]` to `["datetime"]`
+- Added `event_time="datetime"` parameter to properly tell Hopsworks this is a timestamp
+- Fixed all dependent files to expect datetime columns, not string columns
+
+**Lesson:** Don't convert datetime columns to strings unless you absolutely have to. Databases and feature stores need proper timestamp types for time-based operations.
+
+### 6. Upload Function Eating the Datetime Column
+**Problem:** After "fixing" datetime handling, predictions started failing again because the datetime column would disappear after uploading to Hopsworks.
+
+**Fix:** The upload function was modifying the original DataFrame. We changed it to `.copy()` the DataFrame before uploading, keeping the original intact for display later.
+
+### 7. Streamlit Cloud Stuck on Loading Screen
+**Problem:** The app deployed to Streamlit Cloud but would just show a loading spinner forever. Locally it worked fine.
+
+**Fix:** Three issues:
+- Initially removed `python-dotenv` from requirements (Streamlit Cloud doesn't need it)
+- Changed API key loading to try `st.secrets` first for cloud deployment
+- Added proper error handling so the app wouldn't crash when local files don't exist in cloud environment
+
+### 8. Local Streamlit Not Reading .env File
+**Problem:** After "fixing" cloud deployment, local development broke because the app couldn't find the `HOPSWORKS_API_KEY` from the `.env` file.
+
+**Fix:** 
+- Re-added `python-dotenv` to requirements with try-except import (optional dependency)
+- Specified explicit path to `.env` file: `os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')`
+- Changed priority to check environment variables first, then Streamlit secrets
+
+**Lesson:** When supporting both local and cloud deployment, always specify explicit file paths and test both environments separately.
+
+### 9. Requirements.txt Breaking on Streamlit Cloud
+**Problem:** Streamlit Cloud deployment failed with "Error installing requirements" even though packages were correct.
+
+**Fix:** Streamlit Cloud is picky about `requirements.txt` format:
+- Removed all comments (lines starting with #)
+- Removed duplicate package entries (`hopsworks` was listed twice)
+- Removed `confluent-kafka` which wasn't actually needed
+- Removed version pinning to let it install compatible versions
+
+**Takeaway:** Most of the issues came down to:
+1. **Trust but verify** - Don't assume stored calculations are correct; recalculate when displaying critical data
+2. **Type consistency** - Keep datetime as datetime, not strings
+3. **Defensive coding** - Handle both old and new column names during transitions
+4. **Environment differences** - What works locally might not work in cloud; test both
+5. **Clean dependencies** - Only include what you actually use
+
+## License
 
 This project is licensed under the MIT License - see LICENSE file for details.
 
-## 👥 Authors
+## Authors
 
 - **Your Name** - Initial work
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Open-Meteo for free air quality and weather data
 - Hopsworks for feature store infrastructure
 - Streamlit for dashboard framework
 - scikit-learn for machine learning models
 
-## 📞 Contact
+## Contact
 
 - **Project Link:** https://github.com/YOUR_USERNAME/YOUR_REPO
 - **Dashboard:** http://localhost:8501 (when running locally)
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 This project is for informational and educational purposes only. For official air quality advisories, please refer to government agencies and environmental authorities.
 
 ---
 
-**Made with ❤️ for cleaner air in Karachi**
-
-*Last updated: February 13, 2026*
