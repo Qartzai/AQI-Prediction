@@ -5,6 +5,11 @@ import hopsworks
 import os
 from datetime import timedelta
 import matplotlib.pyplot as plt
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # PAGE CONFIG 
 st.set_page_config(
@@ -64,8 +69,11 @@ st.markdown("<p class='subtitle'>Real-time and 3-day Air Quality predictions pow
 # Try Streamlit Cloud secrets first, fallback to environment variable
 try:
     api_key = st.secrets["HOPSWORKS_API_KEY"]
-except:
+except (KeyError, FileNotFoundError):
     api_key = os.getenv("HOPSWORKS_API_KEY")
+    if not api_key:
+        st.error("❌ HOPSWORKS_API_KEY not found. Please set it in .env file or Streamlit secrets.")
+        st.stop()
 
 try:
     project = hopsworks.login(api_key_value=api_key)
