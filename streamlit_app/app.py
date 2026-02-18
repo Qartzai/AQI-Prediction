@@ -4,7 +4,6 @@ import numpy as np
 import hopsworks
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 
 # PAGE CONFIG 
@@ -62,8 +61,11 @@ st.markdown("<h1 class='main-title'>Karachi AQI Prediction Dashboard</h1>", unsa
 st.markdown("<p class='subtitle'>Real-time and 3-day Air Quality predictions powered by ML & Hopsworks Feature Store.</p>", unsafe_allow_html=True)
 
 # CONNECT TO HOPSWORKS
-load_dotenv()
-api_key = os.getenv("HOPSWORKS_API_KEY")
+# Try Streamlit Cloud secrets first, fallback to environment variable
+try:
+    api_key = st.secrets["HOPSWORKS_API_KEY"]
+except:
+    api_key = os.getenv("HOPSWORKS_API_KEY")
 
 try:
     project = hopsworks.login(api_key_value=api_key)
@@ -86,10 +88,15 @@ try:
     st.success("✅ Connected to Hopsworks and fetched latest data.")
 except Exception as e:
     st.error(f"⚠ Could not fetch data from Hopsworks: {e}")
-    st.info("Using local fallback data...")
-    df = pd.read_csv("../data/final/final_selected_features.csv")
-    if "datetime" in df.columns:
-        df["datetime"] = pd.to_datetime(df["datetime"])
+    # Try local fallback (development only)
+    try:
+        df = pd.read_csv("../data/final/final_selected_features.csv")
+        if "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+        st.info("Using local fallback data...")
+    except:
+        st.error("Cannot load data. Please check Hopsworks connection.")
+        st.stop()
 
 # DATA PREPARATION
 df = df.sort_values("datetime").reset_index(drop=True)
