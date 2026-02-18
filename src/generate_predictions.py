@@ -289,7 +289,7 @@ def generate_predictions(forecast_days=3):
     # Upload predictions to Hopsworks for dashboard access
     try:
         from upload_hopsworks import upload_to_hopsworks
-        upload_to_hopsworks(results, feature_group="qartzai_predictions", version=1)
+        upload_to_hopsworks(results.copy(), feature_group="qartzai_predictions", version=1)
         print("✅ Uploaded predictions to Hopsworks Feature Store")
     except Exception as e:
         print(f"⚠️ Could not upload to Hopsworks: {e}")
