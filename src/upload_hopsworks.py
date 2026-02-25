@@ -45,7 +45,7 @@ def upload_to_hopsworks(df: pd.DataFrame = None, feature_group: str = "aqi_featu
     try:
         print(f"🔑 Using API key: {api_key[:10]}...{api_key[-4:] if len(api_key) > 14 else ''}")
         project = hopsworks.login(api_key_value=api_key)
-        fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
+        fs = project.get_feature_store(name='aqi_predictor_2')
         print("✅ Connected to Hopsworks Feature Store")
     except Exception as e:
         print(f"\n❌ Failed to connect to Hopsworks!")

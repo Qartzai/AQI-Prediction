@@ -28,7 +28,7 @@ try:
     else:
         # If no local file, try Hopsworks
         project = hopsworks.login(api_key_value=api_key)
-        fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
+        fs = project.get_feature_store(name='aqi_predictor_2')
         print("✅ Connected to Hopsworks Feature Store")
 
         fg = fs.get_feature_group("qartzai_2", version=1)

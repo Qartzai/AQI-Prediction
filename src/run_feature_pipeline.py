@@ -78,7 +78,7 @@ try:
         import hopsworks
 
         project = hopsworks.login()
-        fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
+        fs = project.get_feature_store(name='aqi_predictor_2')
         fg = fs.get_feature_group("qartzai_2", version=1)
 
         df_check = fg.read()  # Read full feature group

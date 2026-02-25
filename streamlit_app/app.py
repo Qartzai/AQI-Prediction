@@ -65,47 +65,59 @@ st.markdown("""
 
 # TITLE SECTION 
 st.markdown("<h1 class='main-title'>Karachi AQI Prediction Dashboard</h1>", unsafe_allow_html=True)
-st.markdown("<p class='subtitle'>Real-time and 3-day Air Quality predictions powered by ML & Hopsworks Feature Store.</p>", unsafe_allow_html=True)
+st.markdown("<p class='subtitle'>Real-time and 3-day Air Quality predictions powered by ML.</p>", unsafe_allow_html=True)
 
-# CONNECT TO HOPSWORKS
-# Try environment variable first (local .env), then Streamlit Cloud secrets
+# CONNECT TO HOPSWORKS (optional - fallback to local data)
 api_key = os.getenv("HOPSWORKS_API_KEY")
 if not api_key:
     try:
         api_key = st.secrets["HOPSWORKS_API_KEY"]
     except (KeyError, FileNotFoundError):
-        st.error("❌ HOPSWORKS_API_KEY not found. Please set it in .env file or Streamlit secrets.")
-        st.stop()
+        api_key = None
 
-try:
-    project = hopsworks.login(api_key_value=api_key)
-    fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
-    fg = fs.get_feature_group("qartzai_2", version=1)
-    df = fg.read()
-    
-    # Handle datetime column
-    if "datetime" in df.columns:
-        df["datetime"] = pd.to_datetime(df["datetime"])
-    elif "datetime_str" in df.columns:
-        # Legacy: convert datetime_str back to datetime
-        df["datetime"] = pd.to_datetime(df["datetime_str"])
-        df.drop(columns=["datetime_str"], inplace=True, errors="ignore")
-    
-    # Make datetime timezone-naive to avoid comparison errors
-    if "datetime" in df.columns and df["datetime"].dt.tz is not None:
-        df["datetime"] = df["datetime"].dt.tz_localize(None)
-    
-    st.success("✅ Connected to Hopsworks and fetched latest data.")
-except Exception as e:
-    st.error(f"⚠ Could not fetch data from Hopsworks: {e}")
-    # Try local fallback (development only)
+df = None
+use_local_mode = False
+
+if api_key:
     try:
-        df = pd.read_csv("../data/final/final_selected_features.csv")
+        project = hopsworks.login(api_key_value=api_key)
+        fs = project.get_feature_store(name='aqi_predictor_2')
+        fg = fs.get_feature_group("qartzai_2", version=1)
+        df = fg.read()
+        
+        # Handle datetime column
         if "datetime" in df.columns:
             df["datetime"] = pd.to_datetime(df["datetime"])
-        st.info("Using local fallback data...")
-    except:
-        st.error("Cannot load data. Please check Hopsworks connection.")
+        elif "datetime_str" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime_str"])
+            df.drop(columns=["datetime_str"], inplace=True, errors="ignore")
+        
+        # Make datetime timezone-naive
+        if "datetime" in df.columns and df["datetime"].dt.tz is not None:
+            df["datetime"] = df["datetime"].dt.tz_localize(None)
+        
+        st.success("✅ Connected to Hopsworks - using cloud data")
+    except Exception as e:
+        st.warning(f"⚠️ Hopsworks unavailable: {str(e)[:100]}...")
+        use_local_mode = True
+else:
+    st.info("ℹ️ Running in local mode (Hopsworks API key not configured)")
+    use_local_mode = True
+
+# Load local data if Hopsworks failed or not configured
+if use_local_mode:
+    try:
+        local_path = os.path.join(os.path.dirname(__file__), "../data/final/final_selected_features.csv")
+        if os.path.exists(local_path):
+            df = pd.read_csv(local_path)
+            if "datetime" in df.columns:
+                df["datetime"] = pd.to_datetime(df["datetime"])
+            st.info("📁 Using local data files")
+        else:
+            st.error("❌ Local data files not found. Please run feature pipeline first.")
+            st.stop()
+    except Exception as e:
+        st.error(f"❌ Cannot load local data: {e}")
         st.stop()
 
 # DATA PREPARATION
@@ -131,8 +143,8 @@ try:
 except Exception as local_error:
     st.warning(f"Could not load local predictions: {local_error}")
 
-# Fallback to Hopsworks if local file not available
-if not has_predictions:
+# Fallback to Hopsworks if local file not available (only if Hopsworks is connected)
+if not has_predictions and not use_local_mode:
     try:
         fg_predictions = fs.get_feature_group("qartzai_predictions", version=1)
         predictions_df = fg_predictions.read()
@@ -142,8 +154,11 @@ if not has_predictions:
         st.success("Loaded future AQI predictions from Hopsworks.")
         has_predictions = True
     except Exception as e:
-        st.warning(f"No predictions found. Wait for daily prediction pipeline to run.")
+        st.warning(f"⚠️ No predictions available. Run generate_predictions.py locally.")
         has_predictions = False
+elif not has_predictions:
+    st.warning(f"⚠️ No local predictions found. Run: python src/generate_predictions.py")
+    has_predictions = False
 
 # =============================================================================
 # HELPER FUNCTIONS

@@ -9,7 +9,7 @@ load_dotenv()
 def load_feature_data():
     api_key = os.getenv("HOPSWORKS_API_KEY")
     project = hopsworks.login(api_key_value=api_key)
-    fs = project.get_feature_store(name='aqi_predictor_qartzai_featurestore')
+    fs = project.get_feature_store(name='aqi_predictor_2')
     fg = fs.get_feature_group("qartzai_2", version=1)
     df = fg.read()
     
